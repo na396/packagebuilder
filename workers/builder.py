@@ -30,9 +30,10 @@ import re
 import urllib.request, urllib.error, urllib.parse
 import requests
 #from stomp.listener import PrintingListener
-from stomp.listener import StatsListener
+#from stomp.listener import StatsListener
 from urllib.error import URLError
 from threading import Timer
+import stomp
 
 # Modules created by Bioconductor
 from bioconductor.communication import getNewStompConnection
@@ -44,7 +45,7 @@ sys.path.append(os.path.join(ENVIR['bbs_home'], "test", "python"))
 import BBSutils
 import bbs.parse
 
-stomp = None
+stompConn = None
 manifest = None
 working_dir = None
 packagebuilder_ssh_cmd = None
@@ -60,7 +61,7 @@ log_highlighter = "***************"
 # Since we're modifying encoding in this function, it's important that we're consistent
 # (as unicode) when attempting to write to the log file.
 def send_message(msg, status=None):
-    global stomp
+    global stompConn
     global manifest
     logging.debug("Attempting to send message: '{msg}'".format(msg=msg))
     merged_dict = {}
@@ -96,7 +97,7 @@ def send_message(msg, status=None):
     logging.debug("JSON json_str: '{json_str}'".format(json_str=json_str))
 
     logging.debug("Sending message: %s" % json_str)
-    stomp.send(destination=TOPICS['events'], body=json_str,
+    stompConn.send(destination=TOPICS['events'], body=json_str,
                headers={"persistent": "true"})
     logging.debug("send_message(): Message sent.")
 
@@ -201,12 +202,36 @@ def setup():
     logging.debug("Working dir = %s" % working_dir)
     logging.info("Finished setup().")
 
+class MyListenerBuilder(stomp.StatsListener):
+    def on_connecting(self, host_and_port):
+        logging.debug('on_connecting() builder.py %s %s.' % host_and_port)
+    def on_connected(self, frame):
+        logging.debug('on_connected() builder.py  %s .' % (frame.headers))
+    def on_disconnected(self):
+        logging.debug('on_disconnected() builder.py .')
+    def on_heartbeat_timeout(self):
+        logging.debug('on_heartbeat_timeout() builder.py .')
+    def on_before_message(self, frame):
+        logging.debug('on_before_message() builder.py  %s .' % frame)
+        return frame
+    def on_receipt(self, frame):
+        logging.debug('on_receipt()  builder.py %s %s.' % (frame.headers, frame.body))
+    def on_send(self, frame):
+        logging.debug('on_send()  builder.py %s %s %s.' % (frame.cmd, frame.headers, frame.body))
+    def on_heartbeat(self):
+        logging.debug('on_heartbeat() builder.py .')
+    def on_error(self, frame):
+        logging.debug('on_error(): builder.py  "%s".' % frame.message)
+    def on_message(self, frame):
+        headers = frame.headers
+        body = frame.body
+        logging.debug("on_message()  builder.py Message received")
 
 def setup_stomp():
-    global stomp
+    global stompConn
     logging.info("Getting Stomp Connection:")
     try:
-        stomp = getNewStompConnection('', StatsListener())
+        stompConn = getNewStompConnection('builder', MyListenerBuilder())
     except:
         logging.error("setup_stomp(): Cannot connect.")
         raise
@@ -978,7 +1003,7 @@ def onexit():
         "retcode": -1,
         "svn_url": svn_url_global
     })
-    stomp.disconnect(receipt=None)
+    stompConn.disconnect(receipt=None)
 
 
 def clean_up_dir():
