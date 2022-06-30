@@ -97,6 +97,10 @@ def send_message(msg, status=None):
     logging.debug("JSON json_str: '{json_str}'".format(json_str=json_str))
 
     logging.debug("Sending message: %s" % json_str)
+    if not stompConn.is_connected():
+        logging.debug("stomp not connected. Attempting reconnect")
+        setup_stomp()
+
     stompConn.send(destination=TOPICS['events'], body=json_str,
                headers={"persistent": "true"})
     logging.debug("send_message(): Message sent.")
