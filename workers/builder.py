@@ -811,19 +811,19 @@ def do_check(cmdCheck, cmdBiocCheck):
         "status": "write_gitclone",
         "body": "writing bioccheckgitclone results"
     })
-    out_fh = open(outfile, "w")
-    out_fh.write("\n===============================\n\n BiocCheckGitClone('" + package_name + "')\n\n===============================\n\n")
+    out_fh = open(outfile, "wb")
+    out_fh.write(str.encode("\n===============================\n\n BiocCheckGitClone('" + package_name + "')\n\n===============================\n\n"))
     # copy BiocCheckGitClone results
     gitcheckfile = open("CheckGitClone.out")
     for line in gitcheckfile:
-        out_fh.write(line)
+        out_fh.write(str.encode(line))
     gitcheckfile.close()
-    out_fh.write("\n\n\n")
+    out_fh.write(str.encode("\n\n\n"))
     send_message({
         "status": "r_check",
         "body": "starting R CMD check"
     })
-    out_fh.write("\n===============================\n\n R CMD CHECK\n\n===============================\n\n")
+    out_fh.write(str.encode("\n===============================\n\n R CMD CHECK\n\n===============================\n\n"))
     out_fh.flush()
 
     timeout_limit = int(ENVIR['timeout_limit'])
@@ -861,21 +861,21 @@ def do_check(cmdCheck, cmdBiocCheck):
 
     out_fh.flush()
     if (retcode1 == -9):
-        out_fh.write(" ERROR\nTIMEOUT: R CMD check exceeded " + str(min_time) + " mins\n\n\n")
+        out_fh.write(str.encode(" ERROR\nTIMEOUT: R CMD check exceeded " + str(min_time) + " mins\n\n\n"))
         out_fh.flush()
 
     if (retcode1 == -4):
-        out_fh.write(" WARNING: R CMD check exceeded " + str(warntime) +" min requirement\n\n\n")
+        out_fh.write(str.encode(" WARNING: R CMD check exceeded " + str(warntime) +" min requirement\n\n\n"))
         out_fh.flush()
 
 
+    out_fh.write(str.encode("\n\n\n"))
     out_fh.flush()
-    out_fh.write("\n\n\n")
     send_message({
         "status": "bioc_check",
         "body": "starting BiocCheck"
     })
-    out_fh.write("\n===============================\n\n BiocCheck('" + cmdCheck.split(" ")[-1] + "')\n\n===============================\n\n")
+    out_fh.write(str.encode("\n===============================\n\n BiocCheck('" + cmdCheck.split(" ")[-1] + "')\n\n===============================\n\n"))
     out_fh.flush()
 
     start_time2 = datetime.datetime.now()
@@ -899,7 +899,7 @@ def do_check(cmdCheck, cmdBiocCheck):
 
     out_fh.flush()
     if (retcode2 == -9):
-        out_fh.write(" ERROR\nTIMEOUT: BiocCheck exceeded " +  str(min_time2) + "mins\n\n\n")
+        out_fh.write(str.encode(" ERROR\nTIMEOUT: BiocCheck exceeded " +  str(min_time2) + "mins\n\n\n"))
 
     out_fh.flush()
     out_fh.close()
